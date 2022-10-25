@@ -1,13 +1,13 @@
-# Sample Hardhat Project
+#Electronic Health Reecord Smart Contract
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a script that deploys that contract.
+this EHR smart contract is here to demonstrate a use case for solidity smart contract.
 
-Try running some of the following tasks:
+The account deploying the contract is automatically assigned as the administrator (admin).
 
-```shell
-npx hardhat help
-npx hardhat test
-REPORT_GAS=true npx hardhat test
-npx hardhat node
-npx hardhat run scripts/deploy.js
-```
+The admin is the only account that can grant doctor approval.
+
+The patient can only create an account for themself and view their health records
+
+approved doctors can only update and view patient history
+
+NOTE: only manual testing has occured. Automated testing is still being developed.
