@@ -3,12 +3,11 @@
 pragma solidity ^0.8.0;
 
 contract ElectronicHealthRecord {
-    //Patients
 
     address pharmacyID; //default     
     uint medicineID; //medication index.
     
-    //Default contract deployer address to pharmacyID
+    //initializes contract deployer address to pharmacyID
     constructor() {
         pharmacyID = msg.sender;
     }
@@ -19,17 +18,6 @@ contract ElectronicHealthRecord {
         string dose;
         uint price;
     }
-    
-
-
-    //mapping of medication index to information
-    mapping(uint => Medicine) medications;
-
-    modifier pharmacyOnly() {
-        require(msg.sender == pharmacyID, "Only authorized by pharmacy");
-        _;
-    }
-
 
     struct Patient {
         string name;
@@ -37,6 +25,7 @@ contract ElectronicHealthRecord {
         string[] disease;
         string[] medicine;
     }
+
     struct Doctor {
         string name;
         string qualification;
@@ -48,6 +37,12 @@ contract ElectronicHealthRecord {
 
     mapping(address => Doctor) doctors;
     mapping(address => Patient) patients;
+    mapping(uint => Medicine) medications; //mapping of medication index to information
+
+    modifier pharmacyOnly() {
+        require(msg.sender == pharmacyID, "Only authorized by pharmacy");
+        _;
+    }
 
     modifier doctorOnly() {
         bool isDoctor;
@@ -112,9 +107,7 @@ contract ElectronicHealthRecord {
     
     }
 
-    //Doctors
-
-
+    /////////////////////Doctors///////////////////////////
 
     //the account that calls this function registers a doctor account (Automatically approved for this assignment)
     function registerDoctor( string memory _name, 
@@ -162,8 +155,6 @@ contract ElectronicHealthRecord {
             }
 
     /////////Pharmacy/////////////////////////
-    
-
 
     //add medication to contract (pharmacy access only).
     function addMedicine( string memory _medicineName,
