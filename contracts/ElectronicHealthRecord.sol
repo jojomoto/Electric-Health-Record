@@ -3,89 +3,191 @@
 pragma solidity ^0.8.0;
 
 contract ElectronicHealthRecord {
+    //Patients
 
-    address admin;
-
-    //initializing admin to address that deployed contract
+    address pharmacyID; //default     
+    uint medicineID; //medication index.
+    
+    //Default contract deployer address to pharmacyID
     constructor() {
-        admin = msg.sender; //only the person that deployed smart contract is an admin
-        admins[admin] = true;
+        pharmacyID = msg.sender;
     }
 
-    //patient records (approved doctor and symptom of patient)
-    struct PatientRecord {
-        address drID;
-        string symptom;
+    struct Medicine {
+        string medicineName;
+        uint expiryDate;
+        string dose;
+        uint price;
     }
-
-    //mapping of patient's address to their record history
-    mapping(address => PatientRecord[]) patientRecords;
-    //list of admin on the network (Currently one admin)
-    mapping(address => bool) admins;
-    //list of doctors approved by admin
-    mapping(address => bool) doctors;
-    //list of patients approved by doctor
-    mapping(address => bool) patients;
+    
 
 
-    ///////////////MODIFIERS/////////////////
+    //mapping of medication index to information
+    mapping(uint => Medicine) medications;
 
-    //modifier for admin access only
-    modifier adminOnly() {
-        require(admin == msg.sender, "only the admin has access");
+    modifier pharmacyOnly() {
+        require(msg.sender == pharmacyID, "Only authorized by pharmacy");
         _;
     }
 
-    //modifier for approved doctors only
-    modifier doctorOnly(address _doctorID) {
-        require(doctors[_doctorID] == true, "Not an approved doctor");
+
+    struct Patient {
+        string name;
+        uint age;
+        string[] disease;
+        string[] medicine;
+    }
+    struct Doctor {
+        string name;
+        string qualification;
+        string workPlace;
+    }
+
+    address[] approvedPatients;
+    address[] approvedDoctors;
+
+    mapping(address => Doctor) doctors;
+    mapping(address => Patient) patients;
+
+    modifier doctorOnly() {
+        bool isDoctor;
+        for (uint i = 0; i < approvedDoctors.length; i++) {
+            if (approvedDoctors[i] == msg.sender) {
+                isDoctor = true;
+                break;
+            }
+        }
+        require(isDoctor, "Not an approved doctor");
         _;
     }
 
-    //modifier to confirm person executing is the patient themself
-    modifier patientOnly(address _patientID) {
-        require(_patientID == msg.sender, "patients can only create own account");
+    modifier patientOnly() {
+        bool isPatient = false;
+        for (uint i = 0; i < approvedPatients.length; i++) {
+            if (msg.sender == approvedPatients[i]) {
+                isPatient = true;
+                break;
+            }
+        }
+
+        require(isPatient, "Not a registered patient");
         _;
+
     }
 
-    /////////////FUNCTIONS//////////////////
+    //sender of this function registers a patient account (Automatic approval for assignment).
+    function registerPatient ( string memory _name,
+                               uint _age )
+                               public {
 
-    //view admin account (public for everyone)
-    function viewAdmin() public view returns(address) {
-        return admin;
+            patients[msg.sender].name = _name;
+            patients[msg.sender].age = _age;
+
+            approvedPatients.push(msg.sender);
+            }
+
+    //patient can add conditions into account
+    function addDisease (string memory _disease) public patientOnly {
+        patients[msg.sender].disease.push(_disease);
     }
 
-    //add doctor to approved doctors (Must be approved by admin)
-    function addDoctor(address _doctorID) public adminOnly {
-        require(!doctors[_doctorID], "Already a registered doctor");
-        doctors[_doctorID] = true;
+    function viewRecords () public view patientOnly returns (address _patientID, 
+                                                             uint _age,
+                                                             string memory _name,
+                                                             string[] memory _disease,
+                                                             string[] memory _medicine)
+                                                             {
+            
+            return ( msg.sender,
+                     patients[msg.sender].age,
+                     patients[msg.sender].name,
+                     patients[msg.sender].disease,
+                     patients[msg.sender].medicine );
+            }
+
+    //patients can update their age (approved patients only
+    function updateRecords ( uint _age ) public patientOnly {
         
-    }
-    //removes doctor from approved doctors (must be approved by admin)
-    function removeDoctor(address _doctorID) public adminOnly {
-        delete doctors[_doctorID];
-    }
-    //Checks if address is approved doctor (publc for everyone)
-    function isDoctor(address _doctorID) public view returns (bool) {
-        return doctors[_doctorID];  
+        patients[msg.sender].age = _age;
+    
     }
 
-    //Adding a patient may only be by patient
-    function addPatient(address _patientID) public patientOnly(_patientID) {
-        require(!patients[_patientID], "Patient already exists");
-        patients[_patientID] = true;
-    }
+    //Doctors
 
 
-    //Only approved doctors can update patient records
-    function addPatientRecord(address _patientID, string memory _symptom) public doctorOnly(msg.sender) {
-        require(patients[_patientID], "Not a patient");
-        patientRecords[_patientID].push(PatientRecord(msg.sender, _symptom));
-    }
 
-    //Only patient or approved doctors can view the patient record
-    function viewPatient(address _patientID) public view returns (PatientRecord[] memory) {
-        require(doctors[msg.sender] || _patientID == msg.sender, "Access approved by doctor or patient");
-        return patientRecords[_patientID];
-    }
+    //the account that calls this function registers a doctor account (Automatically approved for this assignment)
+    function registerDoctor( string memory _name, 
+                             string memory _qualification,
+                             string memory _workPlace )
+                             public {
+            
+            doctors[msg.sender] = Doctor({ name : _name,
+                                           qualification : _qualification,
+                                           workPlace : _workPlace
+                                           });
+
+            approvedDoctors.push(msg.sender);
+
+            }
+
+    //function addPatient( address _patientID) public {}
+    function viewPatient( address _patientID) public view doctorOnly returns ( address patientID,
+                                                                               uint _age,
+                                                                               string memory _name,
+                                                                               string[] memory _diseases,
+                                                                               string[] memory _medicine)
+                                                                               {
+            return ( _patientID,
+                     patients[_patientID].age,
+                     patients[_patientID].name,
+                     patients[_patientID].disease,
+                     patients[_patientID].medicine);
+                                                               }
+
+    function prescribeMedicine( uint _medicineID,
+                                address _patientID )
+                                public doctorOnly {
+            require(_medicineID < medicineID, "Medicine ID does not exist"); //checking if medicine index exists
+            patients[_patientID].medicine.push(medications[_medicineID].medicineName); 
+            }
+
+    function viewDoctor ( address _doctorID ) public view returns ( string memory _name,
+                                                                    string memory _qualification,
+                                                                    string memory _workPlace )
+                                                                    {
+            return (doctors[_doctorID].name,
+                    doctors[_doctorID].qualification,
+                    doctors[_doctorID].workPlace);
+            }
+
+    /////////Pharmacy/////////////////////////
+    
+
+
+    //add medication to contract (pharmacy access only).
+    function addMedicine( string memory _medicineName,
+                          uint _expiryDate,
+                          string memory _dose,
+                          uint _price )
+                          public pharmacyOnly {
+
+            medications[medicineID] = Medicine( {medicineName : _medicineName,
+                                                expiryDate : _expiryDate,
+                                                dose : _dose,
+                                                price : _price
+                                                });
+            medicineID++;
+            }
+
+    function viewMedicineDetails( uint _medicineID) public view returns (string memory _name,
+                                                                         uint _expiryData,
+                                                                         string memory _dose,
+                                                                         uint _price) {
+            return (medications[_medicineID].medicineName,
+                    medications[_medicineID].expiryDate,
+                    medications[_medicineID].dose,
+                    medications[_medicineID].price);
+            }
+
 }
