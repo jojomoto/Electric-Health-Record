@@ -43,6 +43,4 @@ describe("EHR Smart Contract", function () {
       expect(await EHR.connect(patient1).viewRecords()).to.deep.equal([patient1.address, 26, "patient1", ["chronic migraine"], []]);
     })
   });
-
-  describe("Doctor Records and Access")
 });
