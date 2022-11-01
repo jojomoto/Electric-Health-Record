@@ -2,6 +2,8 @@
 
 pragma solidity ^0.8.0;
 
+import "hardhat/console.sol";
+
 contract ElectronicHealthRecord {
 
     address pharmacyID; //default     
@@ -73,7 +75,7 @@ contract ElectronicHealthRecord {
     //sender of this function registers a patient account (Automatic approval for assignment).
     function registerPatient ( string memory _name,
                                uint _age )
-                               public {
+                               external {
 
             patients[msg.sender].name = _name;
             patients[msg.sender].age = _age;
@@ -82,17 +84,17 @@ contract ElectronicHealthRecord {
             }
 
     //patient can add conditions into account
-    function addDisease (string memory _disease) public patientOnly {
+    function addDisease (string memory _disease) external patientOnly {
         patients[msg.sender].disease.push(_disease);
     }
 
-    function viewRecords () public view patientOnly returns (address _patientID, 
+    function viewRecords () external view patientOnly returns (address _patientID, 
                                                              uint _age,
                                                              string memory _name,
                                                              string[] memory _disease,
                                                              string[] memory _medicine)
                                                              {
-            
+
             return ( msg.sender,
                      patients[msg.sender].age,
                      patients[msg.sender].name,
@@ -101,7 +103,7 @@ contract ElectronicHealthRecord {
             }
 
     //patients can update their age (approved patients only
-    function updateRecords ( uint _age ) public patientOnly {
+    function updateRecords ( uint _age ) external patientOnly {
         
         patients[msg.sender].age = _age;
     
@@ -113,7 +115,7 @@ contract ElectronicHealthRecord {
     function registerDoctor( string memory _name, 
                              string memory _qualification,
                              string memory _workPlace )
-                             public {
+                             external {
             
             doctors[msg.sender] = Doctor({ name : _name,
                                            qualification : _qualification,
@@ -180,5 +182,9 @@ contract ElectronicHealthRecord {
                     medications[_medicineID].dose,
                     medications[_medicineID].price);
             }
+
+    function viewPharmacy() public view returns (address) {
+        return pharmacyID;
+    }
 
 }
